@@ -1,16 +1,13 @@
 package com.eduardo_salvador.api_restful_java_springboot.controllers;
 import com.eduardo_salvador.api_restful_java_springboot.dtos.ProductRecordDto;
-import com.eduardo_salvador.api_restful_java_springboot.exceptions.NoFindException;
 import com.eduardo_salvador.api_restful_java_springboot.models.ProductModel;
-import com.eduardo_salvador.api_restful_java_springboot.repositories.ProductRepository;
+import com.eduardo_salvador.api_restful_java_springboot.services.ProductService;
 import jakarta.validation.Valid;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -19,21 +16,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class ProductController {
 
     @Autowired
-    ProductRepository productRepository;
+    ProductService productService;
 
     @PostMapping("/products")
     public ResponseEntity<ProductModel> saveProduct(@RequestBody @Valid ProductRecordDto productRecordDto) {
-        var productModel = new ProductModel();
-        BeanUtils.copyProperties(productRecordDto, productModel);
-        return ResponseEntity.status(HttpStatus.CREATED).body(productRepository.save(productModel));
+        return ResponseEntity.status(HttpStatus.CREATED).body(productService.save(productRecordDto));
     }
 
     @GetMapping("/products")
     public ResponseEntity<List<ProductModel>> getAllProducts() {
-        List<ProductModel> productsList = productRepository.findAll();
-        if (productsList.isEmpty()) {
-            throw new NoFindException();
-        }
+        List<ProductModel> productsList = productService.findAll();
         for (ProductModel product : productsList) {
             product.add(linkTo(methodOn(ProductController.class)
                     .getOneProduct(product.getIdProduct()))
@@ -44,32 +36,19 @@ public class ProductController {
 
     @GetMapping("/products/{id}")
     public ResponseEntity<ProductModel> getOneProduct(@PathVariable(value="id") UUID id) {
-        Optional<ProductModel> product0 = productRepository.findById(id);
-        if (product0.isEmpty()) {
-            throw new NoFindException("Product not found.");
-        }
-        product0.get().add(linkTo(methodOn(ProductController.class).getAllProducts()).withRel("Products List"));
-        return ResponseEntity.status(HttpStatus.OK).body(product0.get());
+        ProductModel product0 = productService.findById(id);
+        product0.add(linkTo(methodOn(ProductController.class).getAllProducts()).withRel("Products List"));
+        return ResponseEntity.status(HttpStatus.OK).body(product0);
     }
 
     @PutMapping("/products/{id}")
     public ResponseEntity<Object> updateProduct(@PathVariable(value="id") UUID id, @RequestBody @Valid ProductRecordDto productRecordDto) {
-        Optional<ProductModel> product0 = productRepository.findById(id);
-        if (product0.isEmpty()) {
-            throw new NoFindException("Product not found.");
-        }
-        var productModel = product0.get();
-        BeanUtils.copyProperties(productRecordDto, productModel);
-        return ResponseEntity.status(HttpStatus.OK).body(productRepository.save(productModel));
+        return ResponseEntity.status(HttpStatus.OK).body(productService.update(id, productRecordDto));
     }
 
     @DeleteMapping("/products/{id}")
     public ResponseEntity<Object> deleteProduct(@PathVariable(value="id") UUID id) {
-        Optional<ProductModel> product0 = productRepository.findById(id);
-        if (product0.isEmpty()) {
-            throw new NoFindException("Product not found.");
-        }
-        productRepository.delete(product0.get());
+        productService.delete(id);
         return ResponseEntity.status(HttpStatus.OK).body("Product deleted successfully.");
     }
 }
