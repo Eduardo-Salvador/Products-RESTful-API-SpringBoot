@@ -81,6 +81,9 @@ src/
     └── java/com/eduardo_salvador/api_restful_java_springboot/
         ├── ProductServiceImplTest.java        # Unit tests
         └── ProductServiceIntegrationTest.java # Integration tests
+Dockerfile
+docker-compose.yml
+.env.example
 ```
 
 ---
@@ -89,8 +92,6 @@ src/
 
 ### Prerequisites
 
-- [Java 21+](https://www.oracle.com/br/java/technologies/downloads/#java21)
-- [Maven 3.9+](https://maven.apache.org/)
 - [Docker + Docker Compose](https://www.docker.com/)
 
 ### 1. Clone the repository
@@ -100,30 +101,29 @@ git clone https://github.com/your-username/api-restful-java-springboot.git
 cd api-restful-java-springboot
 ```
 
-### 2. Start the database with Docker
+### 2. Configure environment variables
+
+Copy the example file and fill in your values:
 
 ```bash
-docker run --name products-db \
-  -e POSTGRES_DB=products-api \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres123 \
-  -p 5432:5432 \
-  -d postgres
+cp .env.example .env
 ```
 
-### 3. Configure `application.properties`
+`.env.example`:
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/products-api
-spring.datasource.username=postgres
-spring.datasource.password=postgres123
+```env
+POSTGRES_DB=products-api
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=
 ```
 
-### 4. Run the application
+### 3. Run everything with Docker Compose
 
 ```bash
-./mvnw spring-boot:run
+docker-compose up -d
 ```
+
+This single command builds the application image, starts the PostgreSQL database, and runs the API. No local Java or Maven installation required.
 
 The API will be available at `http://localhost:8080`.
 
@@ -131,38 +131,42 @@ The Swagger UI will be available at `http://localhost:8080/swagger-ui.html`.
 
 ---
 
-### Docker Compose
-
-Create a `docker-compose.yml` file at the project root:
-
-```yaml
-version: '3.8'
-services:
-  db:
-    image: postgres
-    container_name: products-db
-    environment:
-      POSTGRES_DB: products-api
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
-    ports:
-      - "5432:5432"
-
-  app:
-    build: .
-    container_name: products-api
-    depends_on:
-      - db
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/products-api
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres123
-```
+### Useful Docker commands
 
 ```bash
-docker-compose up -d
+# Follow logs in real time
+docker-compose logs -f
+
+# Stop all containers without removing volumes
+docker-compose down
+
+# Stop all containers and remove volumes (resets the database)
+docker-compose down -v
+
+# Rebuild the application image after code changes
+docker-compose up -d --build
+```
+
+---
+
+### Running locally without Docker
+
+If you prefer to run the application directly:
+
+**Prerequisites:** Java 21+, Maven 3.9+, PostgreSQL running on port 5432.
+
+Configure `application.properties`:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/products-api
+spring.datasource.username=postgres
+spring.datasource.password=postgres123
+```
+
+Then run:
+
+```bash
+./mvnw spring-boot:run
 ```
 
 ---
