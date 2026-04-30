@@ -18,7 +18,7 @@
 
 ## About
 
-RESTful API developed for study purposes, focused on back-end development best practices. The project includes a complete product CRUD with dynamic filtering, pagination, HATEOAS hypermedia, global exception handling, and coverage with unit and integration tests.
+RESTful API developed for study purposes, focused on back-end development best practices. The project includes a complete product CRUD with dynamic filtering, pagination, HATEOAS hypermedia, global exception handling, separated environments for development and production, and coverage with unit, integration, and controller tests.
 
 ---
 
@@ -32,8 +32,10 @@ RESTful API developed for study purposes, focused on back-end development best p
 - Global exception handling with `@RestControllerAdvice`
 - Entity mapping with MapStruct
 - API documentation with Swagger UI and OpenAPI 3
+- Separated environments with Spring Profiles (`dev` and `prod`)
 - Unit tests with JUnit 5 + Mockito
 - Integration tests with H2 in-memory database
+- Controller tests with MockMvc
 - Containerization with Docker + PostgreSQL
 
 ---
@@ -52,8 +54,8 @@ RESTful API developed for study purposes, focused on back-end development best p
 | H2 Database | - | Test database |
 | MapStruct | 1.6.3 | Object mapping |
 | Lombok | - | Boilerplate reduction |
-| JUnit 5 | - | Unit and integration tests |
-| Mockito | - | Mocks in unit tests |
+| JUnit 5 | - | Unit, integration, and controller tests |
+| Mockito | - | Mocks in unit and controller tests |
 | Docker | - | Containerization |
 | Maven | - | Dependency management |
 
@@ -76,15 +78,31 @@ src/
 │   │   ├── services/          # Service interface + implementation
 │   │   └── specifications/    # Dynamic filters (JPA Specifications)
 │   └── resources/
-│       └── application.properties
+│       ├── application.properties          # Common base configuration
+│       ├── application-dev.properties      # Development environment
+│       └── application-prod.properties     # Production environment
 └── test/
     └── java/com/eduardo_salvador/api_restful_java_springboot/
+        ├── ProductControllerTest.java         # Controller tests (MockMvc)
         ├── ProductServiceImplTest.java        # Unit tests
         └── ProductServiceIntegrationTest.java # Integration tests
 Dockerfile
 docker-compose.yml
 .env.example
 ```
+
+---
+
+## Environments
+
+The application uses Spring Profiles to separate configuration by environment.
+
+| Profile | Usage | Database | Swagger | SQL logs |
+|---|---|---|---|---|
+| `dev` | Local development | localhost:5432 | Enabled | Enabled |
+| `prod` | Production server | Environment variables | Disabled | Disabled |
+
+The active profile is set via `spring.profiles.active` in `application.properties` for local development, or via the `SPRING_PROFILES_ACTIVE` environment variable in Docker Compose for production.
 
 ---
 
@@ -151,16 +169,12 @@ docker-compose up -d --build
 
 ### Running locally without Docker
 
-If you prefer to run the application directly:
-
 **Prerequisites:** Java 21+, Maven 3.9+, PostgreSQL running on port 5432.
 
-Configure `application.properties`:
+Set the active profile to `dev` in `application.properties`:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/products-api
-spring.datasource.username=postgres
-spring.datasource.password=postgres123
+spring.profiles.active=dev
 ```
 
 Then run:
@@ -322,11 +336,13 @@ GET /products?name=note&minPrice=1000&maxPrice=5000&page=0&size=5
 
 ## Tests
 
-The project has two levels of test coverage.
+The project has three levels of test coverage.
 
 **Unit tests** (`ProductServiceImplTest`) use JUnit 5 + Mockito, isolating the service layer with mocks for the repository and mapper. Scenarios covered: `save`, `findAll`, `findById`, `update`, and `delete`, including both success and failure cases (`NoFindException`).
 
 **Integration tests** (`ProductServiceIntegrationTest`) use `@SpringBootTest` with an H2 in-memory database, testing the complete flow including real persistence. Additional scenarios include filtering by name and filtering by price range.
+
+**Controller tests** (`ProductControllerTest`) use `@WebMvcTest` with MockMvc, testing the HTTP layer in isolation with mocked service. Scenarios covered: all endpoints including success, not found, and validation error cases.
 
 ### Run the tests
 
@@ -350,7 +366,7 @@ The project has two levels of test coverage.
 
 ## Author
 
-**Eduardo Salvador** - developed for study and learning purposes.
+**Eduardo Salvador** - Developed for study and learning purposes.
 
 ---
 
